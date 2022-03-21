@@ -1,4 +1,4 @@
-# LUFT - Lua Fold Tooling
+# Luft - Lua Fold Tooling
 
 ## Starting a new Luft folder:
 
