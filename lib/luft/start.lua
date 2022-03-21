@@ -7,6 +7,27 @@ local options = {
 
 local luft = require "luft"
 local sh   = require "aux.shell"
+local path = require "aux.path"
+
+local tpl_init = [[
+-- This file is the entrypoint for your Lua program.
+-- It works exactly like a module.
+local init={}
+
+-- This function will be called when you run
+-- `./run` or `./run run`
+function init.run(args)
+   for i,v in ipairs(args) do print(i,v) end
+end
+
+-- This function will be called when you run
+-- `./run help`
+function init.help()
+   print"fill here with some  useful help"
+end
+
+return init
+]]
 
 function start.run(args)
    local cfg = luft.configure(options,args)
@@ -30,6 +51,11 @@ function start.run(args)
    end
 
    cfg:create(luacmd,luaver)
+
+   local customprogram = cfg.dir..'/init.lua'
+   if not path.isfile(customprogram) then
+      io.open(customprogram,"w"):write(tpl_init)
+   end
 end
 
 return start

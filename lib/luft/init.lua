@@ -114,9 +114,6 @@ function config:create(luacmd,luaver)
 end
 
 function luft.configure(options,args)
-   for i,v in ipairs(options) do
-      print(i,v)
-   end
    config.opt = cli.getopt(options,args)
    local dir = select_dir(config.opt['--'][1])
    config.dir = dir

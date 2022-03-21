@@ -15,7 +15,6 @@ local isoption
 ---@returns boolean
 function isoption(str)
    local _,stop = str:find("^%-*")
-   print(_,stop,str)
    if stop < 1 or stop > 2 then return false end
    return true
 end
