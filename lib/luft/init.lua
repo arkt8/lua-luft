@@ -7,16 +7,16 @@ local cli  = require "aux.cli"
 local path = require "aux.path"
 local sh   = require "aux.shell"
 
----@param dir string
----@return string dir
-function select_dir(dir)
-   if not dir then
+---@param  target string
+---@return string target_path
+function select_dir(target)
+   if not target then
       return sh.error("target directory not specified")
    end
-   if not path.isdir(dir) then
-      return sh.error(("target desn't exists: %q"):format(dir))
+   if not path.isdir(target) then
+      return sh.error(("target desn't exists: %q"):format(target))
    end
-   return path.realpath(dir)
+   return path.realpath(target)
 end
 
 ---@param ver string
@@ -113,12 +113,11 @@ function config:create(luacmd,luaver)
    spech:write( tpl_rockspec:format(luadep) )
 end
 
-function luft.configure(options,args)
-   config.opt = cli.getopt(options,args)
-   local dir = select_dir(config.opt['--'][1])
-   config.dir = dir
-   config.depsfile = dir..'/deps.cfg'
-   config.envdir = dir..'/.env'
+function luft.configure(target)
+   target = select_dir(target)
+   config.target = target
+   config.depsfile = target..'/deps.cfg'
+   config.envdir = target..'/.env'
    config.spec = config.envdir..'/luftfolder-pinned-0.rockspec'
    return config
 end

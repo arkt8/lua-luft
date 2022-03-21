@@ -1,11 +1,12 @@
 -- Command line action for start Luft directory
 local start = {}
 local options = {
-   ['--lua-version'] = true,
-   ['--help']        = false
+   ['lua-version'] = true,
+   ['help'] = false
 }
 
 local luft = require "luft"
+local cli =  require "aux.cli"
 local sh   = require "aux.shell"
 local path = require "aux.path"
 
@@ -30,8 +31,9 @@ return init
 ]]
 
 function start.run(args)
-   local cfg = luft.configure(options,args)
-   local luacmd, luaver = luft.lua(cfg.opt["--lua-version"] and cfg.opt['--lua-version'][1])
+   local opt = cli.getopt(options,args)
+   local cfg = luft.configure(opt()[1])
+   local luacmd, luaver = luft.lua(opt['lua-version'])
 
    if cfg:has_dependencies() then
       sh.error("A configuration already exists, try to run 'luft update "..cfg.dir.."'")
@@ -52,7 +54,7 @@ function start.run(args)
 
    cfg:create(luacmd,luaver)
 
-   local customprogram = cfg.dir..'/init.lua'
+   local customprogram = cfg.target..'/init.lua'
    if not path.isfile(customprogram) then
       io.open(customprogram,"w"):write(tpl_init)
    end

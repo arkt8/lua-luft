@@ -1,34 +1,55 @@
 local lcli = require 'aux.cli'
-local spl = (require 'aux.string').split
 
-local spec = { ['-f']    = false
-             , ['--flag']= false
-             , ['-o']    = true
-             , ['--opt'] = true
-             , ['-s']    = {'a','b','c'}
-             , ['--set'] = {'a','b','c'}
+local spec = { ['f']   = false
+             , ['flag']= false
+             , ['o']    = true
+             , ['opt'] = true
+             , ['opte']= true
+             , ['s']    = {'a','b','c'}
+             , ['set'] = {'a','b','c'}
+             , ['list']= {}
+             , ['l']    = {}
              }
 
 do
    local res = lcli.getopt( spec, {
-      '-f','--flag',
-      '-o','oval', '--opt','optval',
-      '-s','b','--set','a'
+      '-f',
+      '--flag',
+      '-o','oval',
+      '--opt','optval',
+      '--opte','opt1', '--opte','opt2',
+      '-s','b',
+      '--set','a',
+      '-l','first', '-l','second',
+      '--list','1st', '--list','2nd'
    })
-   assert(res['-f']       == true,     'Short flag')
-   assert(res['--flag']   == true,     'Long flag')
-   assert(res['-o'][1]    == 'oval',   'Short opt')
-   assert(res['--opt'][1] == 'optval', 'Long opt')
-   assert(res['-s'][1]    == 'b',      'Short choice')
-   assert(res['--set'][1] == 'a',      'Long choice')
+   assert(res.f       == true,     'Short flag')
+   assert(res.flag    == true,     'Long flag')
+   assert(res.o       == 'oval',   'Short opt')
+   assert(res.opt     == 'optval', 'Long opt')
+   assert(res.opte    == 'opt2',   'Long opt twice')
+   assert(res.s       == 'b',      'Short choice')
+   assert(res.set     == 'a',      'Long choice')
+
+   assert(
+      res.l[1] == 'first' and res.l[2] == 'second',
+      'Short list'
+   )
+   assert(
+      res.list[1] == '1st' and res.list[2] == '2nd',
+      'Long list'
+   )
 end
 
 do
    local args = {'-o','any','text','values'}
    local res = lcli.getopt(spec, args)
-   assert(res['-o'][1] == 'any',    'Short opt')
+   assert(res.o == 'any',    'Short opt')
    assert(res['--'][1] == 'text',   'Fst value')
    assert(res['--'][2] == 'values', 'Snd value')
+   assert(res['--'] == res(),'Values as call return')
+   assert(res()[1] == 'text','Fst value by call return')
+   assert(res()[2] == 'values','Snd value by call return')
 end
 
 print('Passed', arg[0])

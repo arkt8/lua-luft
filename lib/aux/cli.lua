@@ -12,11 +12,10 @@ local e_invalidscope = "invalid scope: %q"
 local isoption
 
 ---@param str string
----@returns boolean
-function isoption(str)
-   local _,stop = str:find("^%-*")
-   if stop < 1 or stop > 2 then return false end
-   return true
+---@returns string, boolean
+function stripoption(str)
+   local s,m = str:gsub('^%-%-*([^%-])','%1')
+   return s, m > 0
 end
 
 
@@ -26,54 +25,79 @@ end
 -- Parse and get command line options
 --
 -- Schema example for cli.args usage
--- spec = { flag    = false
---        , option  = true
---        , choice  = {"a","b"} }
+-- spec = { flag    = false     -- no value
+--        , option  = true      -- has value
+--        , choice  = {"a","b"} -- value must be one a or b
+--        , list    = {}        -- can occur more than once
+--        }
+-- Characteristics:
+-- * Note that the specs enforce which arguments can be used
+--   avoiding user to put inexistent arguments
+-- * It limits alternatives when used `{choices}` or if
+--   they can occurr twice of more when used `{}`
+-- * It doesn't check the combination between arguments
+--   neither enforce the presence of arguments so you must
+--   do it if needed inside your logic
 function cli.getopt( spec, arglist )
    arglist = arglist or arg
    local hang, endoptions
    local res = { ["--"] = {} }
 
-   for _,v in ipairs( arglist ) do
+   for _,item in ipairs(arglist) do
+      item, isoption = stripoption(item)
       if endoptions     then goto value  end
-      if isoption( v ) then goto option end
+      if isoption then goto option end
 
    :: value :: --------------------------------------------
-      if hang then
-         if type( spec[hang] ) == "table" then
-            if list.contains( spec[ hang ], v ) then
-               table.insert( res[hang], v )
-            else
-               shell.error( e_invalid:format( hang ) )
+      if hang then -- Pending option waiting for a value
+         if type(spec[hang]) == "table" then
+            if #spec[hang] > 0 then -- only spec={a,b,c}
+               if list.contains(spec[ hang ], item) then
+                  res[hang] = item
+               else
+                  shell.error( e_invalid:format( hang ) )
+               end
+            else -- Only spec={}
+               table.insert(res[hang], item)
             end
          else
-            table.insert( res[hang], v )
+            res[hang]=item
          end
          hang = nil
-      else
-         table.insert( res["--"], v )
+      else -- Values that doesn't belong to any option
+         table.insert(res["--"], item)
       end
       goto nextarg
 
    :: option :: -------------------------------------------
 
       if hang then shell.error( e_needval:format( hang ) ) end
-      if v == "--" then
+      if item == "--" then
          endoptions = true
          goto nextarg
       end
-      if spec[v] == nil then shell.error( e_unknown:format( v )) end
+      if spec[item] == nil then shell.error( e_unknown:format( item )) end
 
-      if spec[v] then
-         hang = v
-         res[v] = {}
+      if spec[item] then
+         hang = item
+         if type(spec[item]) == "table" and #spec[item] == 0 then
+            res[item] = res[item] or {}
+         else
+            res[item] = false
+         end
       else
-         res[v] = true
+         res[item] = true
       end
 
    :: nextarg ::
    end
-   return res
+   return setmetatable(res,{__call=cli.getval})
+end
+
+-- Get the values of the call, that doens't are options
+---@returns table
+function cli.getval(self)
+   return self['--']
 end
 
 -- Gets the first scope that should preceed arguments
